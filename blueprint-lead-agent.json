@@ -1,0 +1,810 @@
+{
+  "flow": [
+    {
+      "id": 2,
+      "mapper": {},
+      "module": "whatsapp-business-cloud:watchEvents2",
+      "version": 1,
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 650
+        }
+      },
+      "parameters": {}
+    },
+    {
+      "id": 7,
+      "mapper": null,
+      "module": "builtin:BasicRouter",
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 8,
+              "filter": {
+                "name": "text",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.messages[].text.body}}",
+                      "o": "exist"
+                    },
+                    {
+                      "a": "{{2.messages[].type}}",
+                      "b": "text",
+                      "o": "text:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "scope": "roundtrip",
+                "variables": [
+                  {
+                    "name": "content",
+                    "value": "{{2.messages[].text.body}}"
+                  },
+                  {
+                    "name": "phone",
+                    "value": "{{2.contacts[].wa_id}}"
+                  },
+                  {
+                    "name": "name",
+                    "value": "{{2.contacts[].profile.name}}"
+                  },
+                  {
+                    "name": "type",
+                    "value": "{{2.messages[].type}}"
+                  }
+                ]
+              },
+              "module": "util:SetVariables",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 600,
+                  "y": 0,
+                  "name": "הגדרת מספר משתנים"
+                }
+              },
+              "parameters": {}
+            },
+            {
+              "id": 10,
+              "tools": [
+                {
+                  "name": "חיפוש ליד",
+                  "description": "הפעל בכל הודעה נכנסת, לפני כל פעולה אחרת. חיפוש לפי מספר הטלפון.\n\nאם חזרה רשומה — פונה מוכר. קרא את ההודעות הקודמות והשתמש בכלי העדכון ולא ביצירה. שמור את מזהה הרשומה.\n\nאם לא חזרה כלום — פונה חדש.",
+                  "flow": [
+                    {
+                      "id": 101,
+                      "module": "airtable:ActionSearchRecords",
+                      "version": 3,
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      },
+                      "mapper": {
+                        "base": "YOUR_AIRTABLE_BASE_ID",
+                        "table": "YOUR_AIRTABLE_TABLE_ID",
+                        "formula": "FIND(\"{{8.phone}}\", {נייד} & \"\")",
+                        "maxRecords": 3
+                      },
+                      "metadata": {
+                        "designer": {
+                          "x": 300,
+                          "y": 600
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "flow": [
+                    {
+                      "id": 11,
+                      "mapper": {
+                        "from": "drive",
+                        "limit": "15",
+                        "sheetId": "YOUR_SHEET_TAB_NAME",
+                        "spreadsheetId": "YOUR_GOOGLE_SHEET_ID",
+                        "includesHeaders": "{{10.includesHeaders}}",
+                        "valueRenderOption": "FORMATTED_VALUE",
+                        "dateTimeRenderOption": "FORMATTED_STRING"
+                      },
+                      "module": "google-sheets:filterRows",
+                      "version": 2,
+                      "metadata": {
+                        "designer": {
+                          "x": 1200,
+                          "y": 250,
+                          "name": "general- מידע על המוצרים"
+                        }
+                      },
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      }
+                    }
+                  ],
+                  "name": "Google Sheets: Search Rows",
+                  "description": "### הנחיות קריטיות לשימוש בטבלת המוצרים והשירותים (Google Sheets):\n\n1. בדיקת \"סטטוס מידע\" (חובה לפני כל מענה):\n   - בדוק תמיד את עמודת \"סטטוס מידע\" עבור המוצר/שירות המבוקש.\n   - אם מופיע \"להשלמה\", \"דורש השלמה\" או \"דורש אימות\":\n     * אסור למסור מחיר, קישור רכישה, תאריכים או להבטיח בונוסים/זמינות שלא אומתו!\n     * יש להציג רק את התוצאה/מהות המוצר (\"למי זה מתאים\" ו\"התוצאה המרכזית\").\n     * אם הלקוח מבקש מחיר או קישור שאינם מאושרים – הודע לו שהפרטים נבדקים מול הצוות ופעל לפי \"נוהל חוסר מידע\".\n\n2. אבחון והתאמה מדויקת (לא לדחוף מוצרים):\n   - שאל בקצרה מה בעל העסק רוצה לפתור או מה רמת ההטמעה שהוא מחפש.\n   - הצע תמיד הצעה אחת מרכזית שהכי מתאימה לצורך שלו, והסבר במשפט קצר למה היא מתאימה. הימנע משליחת רשימה ארוכה ומעמיסה של כל המוצרים.\n\n3. חוקי מענה לפי קטגוריית הצעה:\n   - קורס דיגיטלי:\n     * אם המחיר והקישור מאושרים (כמו בקורס \"איך לבנות צוות של 3 סוכני AI\" - 297 ₪) – הסבר בקצרה על שלושת הסוכנים ושלח את הקישור לדף המוצר.\n     * בשאר הקורסים המסומנים להשלמה – הצג את הפתרון והתוצאה בלבד, ללא מחיר/קישור.\n   - סדנה חיה (\"סדנת Claude Code\"):\n     * בדוק נכונות ללמוד ולתרגל.\n     * מסור את המחיר (1,997 ₪ כולל מע״מ, עד 3 תשלומים) ושלח את קישור הסילבוס.\n     * אין להבטיח מועד מחזור או שמירת מקום ספציפי ללא בדיקת תאריכים עדכניים.\n   - ליווי פרימיום / תהליך שנתי:\n     * אסור למסור טווח מחיר, מחירים או להבטיח פתרון ספציפי טרם שיחת אבחון.\n     * אסוף את הפרטים הבאים מהלקוח: שם, תחום העסק, צוואר הבקבוק/הבעיה המרכזית, מערכות קיימות ורמת דחיפות.\n     * לאחר איסוף הפרטים – הפנה אותו לתיאום שיחת התאמה ביומן."
+                },
+                {
+                  "flow": [
+                    {
+                      "id": 12,
+                      "mapper": {
+                        "base": "YOUR_AIRTABLE_BASE_ID",
+                        "table": "YOUR_AIRTABLE_TABLE_ID",
+                        "record": {
+                          "YOUR_FIELD_INCOMING": "{{10.record.YOUR_FIELD_INCOMING}}",
+                          "YOUR_FIELD_FULLNAME": "{{8.name}}",
+                          "YOUR_FIELD_PHONE": "{{8.phone}}",
+                          "YOUR_FIELD_EMAIL": "{{10.record.YOUR_FIELD_EMAIL}}",
+                          "YOUR_FIELD_DATE": "{{formatDate(now; \"DD/MM/YYYY\")}}"
+                        },
+                        "typecast": true,
+                        "useColumnId": false
+                      },
+                      "module": "airtable:ActionCreateRecord",
+                      "version": 3,
+                      "metadata": {
+                        "designer": {
+                          "x": 1200,
+                          "y": 450,
+                          "name": "הכנסת ליד חדש לאירטיבל"
+                        }
+                      },
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      }
+                    }
+                  ],
+                  "name": "Airtable: Create a Record",
+                  "description": "Creates a new record in Airtable."
+                },
+                {
+                  "flow": [
+                    {
+                      "id": 13,
+                      "mapper": {
+                        "limit": "50",
+                        "query": "{{10.query}}",
+                        "fileIds": [],
+                        "filestorage": [
+                          "YOUR_KNOWLEDGE_STORE_ID"
+                        ]
+                      },
+                      "module": "knowledge:KnowledgeStandAlone",
+                      "version": 1,
+                      "metadata": {
+                        "designer": {
+                          "x": 811,
+                          "y": 218
+                        }
+                      },
+                      "parameters": {}
+                    }
+                  ],
+                  "name": "Agent knowledge",
+                  "description": "Search uploaded files using semantic similarity to retrieve relevant facts and context needed to answer the user’s question. Use this tool when the answer depends on information contained in the uploaded documents."
+                },
+                {
+                  "flow": [
+                    {
+                      "id": 14,
+                      "mapper": {
+                        "select": "detail",
+                        "calendar": "YOUR_CALENDAR_ID",
+                        "summary": "{{10.eventTitle}}",
+                        "description": "שם: {{8.name}}\nטלפון: {{8.phone}}\nמייל: {{10.leadEmail}}\nנושא: {{10.eventTopic}}\nמה עלה: {{10.eventNotes}}",
+                        "start": "{{10.eventStart}}",
+                        "duration": "00:20:00",
+                        "allDayEvent": false,
+                        "conferenceDate": true,
+                        "attendees": [],
+                        "transparency": "opaque",
+                        "visibility": "default"
+                      },
+                      "module": "google-calendar:createAnEvent",
+                      "version": 5,
+                      "metadata": {
+                        "designer": {
+                          "x": 1199,
+                          "y": 663,
+                          "name": "קביעת שיחה עם ליד"
+                        }
+                      },
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      }
+                    }
+                  ],
+                  "name": "Google Calendar: Create an Event",
+                  "description": "### נוהל תיאום שיחת התאמה ביומן (Meeting Booking Flow):\n\n1. טריגרים להפניה לתיאום שיחה:\n   - מתעניין בליווי אישי 1:1 (הטמעת AI / אוטומציות).\n   - מתעניין בתהליך פרימיום שנתי (גיוס צוות, ניהול וסיסטמים).\n   - מתעניין בסדנת Claude Code שמבקש לשוחח / לבדוק התאמה.\n   - כל לקוח שמבקש במפורש לדבר עם הצוות / שיחת ייעוץ.\n\n2. חוקי בדיקת זמינות ביומן:\n   - בדוק זמינות אך ורק בבלוקים המסומנים ביומן במפורש כ: \"שיחות התאמה עם לידים\" (אין לקבוע בשום משבצת אחרת!).\n   - ודא שהזמנים המוצעים הם לעתיד בלבד (לא להציע שעות שכבר עברו באותו היום).\n   - בכל שלב, הצע תמיד 2 אופציות מדויקות לבחירה (למשל: \"טל פנויה היום בשעה 14:00 או מחר ב-11:00, מה מהם יותר נוח לך?\").\n\n3. ניהול סבבי הצעות והתנגדות זמנים:\n   - סבב 1 וסבב 2: הצע 2 חלונות זמן מתוך המשבצות הפנויות ביומן.\n   - סבב 3 (אם עדיין לא מתאים): שאל את הלקוח: \"איזה יום ושעה במהלך השבוע יכולים להתאים לך ביותר?\".\n   - בדיקת בקשת הלקוח:\n     * אם השעה שהלקוח ביקש פנויה ומאושרת ביומן תחת הבלוקים המותרים – קבע את השיחה מיד.\n     * אם השעה תפוסה או מחוץ לשעות המאושרות – אל תסרב בצורה יבשה. כתוב: \"מעולה, אני בודק מול טל/הצוות אם אפשר לפתוח חלון מיוחד בזמן הזה ונחזור אליך בהקדם לתיאום 😊\".\n     * במקרה זה: עדכן מיד את הסטטוס ברשומת ה-Airtable ל-\"לחזור לתיאום\" ושלח מייל התראה לצוות.\n\n4. איסוף פרטים לקראת הזימון:\n   - בקש מהלקוח את כתובת האימייל שלו: \"כדי שאוכל לשלוח לך את הזימון ליומן ולזום, מה המייל שלך?\".\n   - במידה והלקוח לא מוסר מייל או מתחמק – **קבע את השיחה ביומן בכל זאת** על בסיס שמו ומספר הטלפון שלו.\n\n5. יצירת האירוע ביומן (Event Creation Rules):\n   - משך הפגישה: **20 דקות בדיוק**.\n   - כותרת האירוע ביומן: \n     `שיחת התאמה - {שם הנושא שהתעניין} - {שם הלקוח}`\n     (דוגמה: \"שיחת התאמה - ליוווי הטמעת AI - יוסי כהן\" / \"שיחת התאמה - סדנת Claude Code - דנה לוי\").\n   - הגדרת וידאו: הפעל יצירת לינק אוטומטי ל-Zoom בתוך הזימון.\n   - תיאור האירוע (Description): \n     * שם הלקוח: {שם מלא}\n     * טלפון: {מספר טלפון}\n     * מייל: {כתובת מייל, אם נמסרה}\n     * תחום/נושא השיחה: {התעניינות הלקוח}\n     * הערות/צווארי בקבוק שעלו בשיחה: {סיכום קצר של מה שנאמר}\n\n6. אישור סופי מול הלקוח:\n   - לאחר יצירת האירוע בהצלחה, שלח הודעת אישור ברורה ונעימה:\n     \"מעולה {שם פרטי}! קבענו ל-{יום} בשעה {שעה}. שלחתי לך זימון עם קישור לזום (גם למייל {אם נמסר}) 🚀. מחכים לדבר איתך!\"\n\nהפגישה 20 דקות בדיוק. העבר שעת התחלה מלאה עם תאריך ושעה. אל תבטיח זום — קישור הווידאו הוא Google Meet."
+                },
+                {
+                  "name": "עדכון ליד",
+                  "description": "הפעל בכל הודעה של פונה שכבר קיים. העבר את מזהה הרשומה מהחיפוש.\n\nבשדה ההודעות הנכנסות כתוב את כל מה שהיה שם ומתחתיו בשורה חדשה את ההודעה החדשה. אל תמחק היסטוריה. אותו דבר בהודעות היוצאות.",
+                  "flow": [
+                    {
+                      "id": 102,
+                      "module": "airtable:ActionUpdateRecords",
+                      "version": 3,
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      },
+                      "mapper": {
+                        "base": "YOUR_AIRTABLE_BASE_ID",
+                        "table": "YOUR_AIRTABLE_TABLE_ID",
+                        "id": "{{10.recordId}}",
+                        "record": {
+                          "YOUR_FIELD_INCOMING": "{{10.allIncoming}}",
+                          "YOUR_FIELD_OUTGOING": "{{10.allOutgoing}}",
+                          "YOUR_FIELD_STATUS": "{{10.newStatus}}",
+                          "YOUR_FIELD_EMAIL": "{{10.emailIfGiven}}"
+                        },
+                        "typecast": true,
+                        "useColumnId": false
+                      },
+                      "metadata": {
+                        "designer": {
+                          "x": 600,
+                          "y": 600
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "בדיקת זמינות ביומן",
+                  "description": "הפעל לפני כל הצעת מועד. אף פעם אל תציע שעה בלי להפעיל אותו.\n\nאירוע ששמו \"שיחות התאמה ללידים\" הוא חלון פנוי. כל אירוע אחר ביומן הוא זמן תפוס.\n\nמותר להציע שעה רק אם היא בתוך חלון פנוי, אין בה פגישה קיימת כולל 20 הדקות שאחריה, והיא בעתיד. הצע בדיוק שני מועדים.\n\nאם אין אף חלון פנוי — אל תמציא שעה, והפעל את כלי ההתראה.",
+                  "flow": [
+                    {
+                      "id": 103,
+                      "module": "google-calendar:searchEvents",
+                      "version": 5,
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      },
+                      "mapper": {
+                        "calendar": "YOUR_CALENDAR_ID",
+                        "timeMin": "{{now}}",
+                        "timeMax": "{{addDays(now; 14)}}",
+                        "singleEvents": true,
+                        "orderBy": "startTime",
+                        "limit": 40
+                      },
+                      "metadata": {
+                        "designer": {
+                          "x": 900,
+                          "y": 600
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "התראה לבעל העסק",
+                  "description": "הפעל בשלושה מצבים בלבד:\n1. אין לך תשובה. נושא: צריך תשובה\n2. הפונה ביקש בן אדם או מתוסכל. נושא: ביקש בן אדם\n3. מתעניין בליווי פרימיום או בתהליך שנתי. נושא: ליד חם\n\nבגוף: שם, טלפון, מה כתב, מה ענית, מה חסר. רק אחרי שהכלי רץ — אמור לפונה שהעברת.",
+                  "flow": [
+                    {
+                      "id": 104,
+                      "module": "google-email:ActionSendEmail",
+                      "version": 2,
+                      "parameters": {
+                        "account": 0
+                      },
+                      "mapper": {
+                        "to": [
+                          "your@email.com"
+                        ],
+                        "subject": "סוכן לידים — {{10.alertSubject}}",
+                        "html": "{{10.alertBody}}"
+                      },
+                      "metadata": {
+                        "designer": {
+                          "x": 1200,
+                          "y": 600
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "mapper": {
+                "files": [],
+                "message": "שם משתמש: {{8.name}}\nתוכן ההודעה: \n{{8.content}}",
+                "threadId": "{{8.phone}}",
+                "outputType": "text",
+                "tokenLimit": "50",
+                "modelConfig": {
+                  "timeout": "",
+                  "recursionLimit": "15",
+                  "iterationsFromHistoryCount": "5"
+                },
+                "defaultModel": "gemini-3.5-flash-lite",
+                "systemPrompt": "אתה \"אדיר\", עוזר אישי דיגיטלי חם, שירותי ומקצועי.\n\n### ⛔ חוקי ברזל נוקשים (Zero Tolerance):\n1. איסור מוחלט על \"מגילות\": אורך הודעה מקסימלי הוא 2–3 משפטים קצרים בלבד!\n2. איסור מסירת מחיר: אל תנקוב במחיר בשום אופן אלא אם הלקוח שאל במפורש \"כמה זה עולה?\" / \"מה המחיר?\".\n3. שפה ניטרלית וטבעית: אסור להשתמש בלוכסנים (בלי: \"תלמד/י\", \"תרצה/י\"). השתמש רק בניסוח טבעי (למשל: \"איזה כיף שפנית\", \"הסדנה כוללת...\", \"רוצה שנבדוק התאמה?\").\n4. מילים באנגלית: שמות כמו \"Claude Code\" או קישורים יש לכתוב בשורה נפרדת לחלוטין כדי למנוע היפוך אותיות בוואטסאפ.\n5. אמינות: ענה אך ורק על פי המידע המאושר. אל תמציא נתונים.\n\n---\n\n### 🛑 פרוטוקול תיאום פגישה ביומן (חובה לעבוד שלב-אחר-שלב בלבד!):\nחל איסור מוחלט להפעיל את כלי יצירת הפגישה (Create Event) מבלי שהתקיימו כל השלבים הבאים לפי הסדר:\n\n* שלב 1 (הצעה): הלקוח הביע רצון לתאם שיחה.\n  👈 הפעולה שלך: בדוק ביומן משבצות פנויות של \"שיחות התאמה עם לידים\", והצע ללקוח בדיוק 2 מועדים לבחירה (לדוגמה: \"טל פנויה היום ב-14:00 או מחר ב-11:00, מה יותר נוח?\"). אל תיצור אירוע ביומן בשלב זה!\n* שלב 2 (אישור מועד ואיסוף מייל): הלקוח בחר שעה ספציפית.\n  👈 הפעולה שלך: בקש ממנו כתובת מייל לטובת שליחת הזימון והקישור ל-Zoom.\n* שלב 3 (יצירת הפגישה בלבד): רק אחרי שהשעה והיום נבחרו בבירור.\n  👈 הפעולה שלך: הפעל את כלי היומן ליצירת אירוע של 20 דקות עם Zoom, ושלח הודעת אישור קצרה.\n\n---\n\n### ניתוב שיחה ותגובות:\n\n● פנייה על סדנת Claude Code / קורסים:\n- אל תשפוך את כל הסילבוס והעלויות בבת אחת.\n- תן הסבר קצר וממצה במשפט אחד:\n  \"בסדנה לומדים לבנות מערכות וסוכני AI שמבצעים משימות אמיתיות וחוסכים עבודה שוטפת בעסק 😊.\n  רוצה שנבדוק יחד אם זה מתאים לאופי הפעילות שלך כרגע?\"\n\n● שירות לקוחות / תמיכה:\n- ענה מתוך מאגר \"general\". אם חסר מידע – מסור שהנושא נבדק מול הצוות ושלח מייל פנימי.\n\n● מתעניין כללי / ליווי אישי:\n- צור ליד ב-Airtable.\n- שאל שאלה קצרה לאבחון האתגר בעסק לפני שמציעים פתרון או שיחה.",
+                "fallbackEnabled": false,
+                "reasoningEffort": "low"
+              },
+              "module": "ai-local-agent:RunLocalAIAgent",
+              "version": 0,
+              "metadata": {
+                "designer": {
+                  "x": 900,
+                  "y": 0
+                }
+              },
+              "parameters": {
+                "makeConnectionId": 0
+              }
+            },
+            {
+              "id": 19,
+              "mapper": {
+                "to": "{{8.phone}}",
+                "text": {
+                  "body": "{{10.response}}",
+                  "preview_url": false
+                },
+                "type": "text",
+                "fromId": "YOUR_WHATSAPP_PHONE_NUMBER_ID"
+              },
+              "module": "whatsapp-business-cloud:sendMessage",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 1200,
+                  "y": 0
+                }
+              },
+              "parameters": {
+                "__IMTCONN__": 0
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 9,
+              "filter": {
+                "name": "audio",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.messages[].type}}",
+                      "b": "audio",
+                      "o": "text:equal"
+                    }
+                  ]
+                ]
+              },
+              "mapper": {
+                "mediaId": "{{2.messages[].audio.id}}"
+              },
+              "module": "whatsapp-business-cloud:getMedia",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 600,
+                  "y": 1300
+                }
+              },
+              "parameters": {
+                "__IMTCONN__": 0
+              }
+            },
+            {
+              "id": 24,
+              "mapper": {
+                "file_data": "{{9.mediaData}}",
+                "file_name": "{{9.mediaName}}",
+                "useFileSearchStore": false
+              },
+              "module": "gemini-ai:uploadAFile",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 900,
+                  "y": 1300
+                }
+              },
+              "parameters": {
+                "__IMTCONN__": 0
+              }
+            },
+            {
+              "id": 25,
+              "mapper": {
+                "model": "gemini-2.5-flash",
+                "contents": [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "file",
+                        "file_data": {
+                          "file_uri": "{{24.uri}}",
+                          "mime_type": "{{24.mimeType}}"
+                        }
+                      },
+                      {
+                        "text": "תתמלל לעברית את הקובץ שעלה",
+                        "type": "text"
+                      }
+                    ]
+                  }
+                ],
+                "generationConfig": {
+                  "imageConfig": {},
+                  "thinkingConfig": {}
+                },
+                "system_instruction": {}
+              },
+              "module": "gemini-ai:createACompletionGeminiPro",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 1200,
+                  "y": 1300
+                }
+              },
+              "parameters": {
+                "__IMTCONN__": 0
+              }
+            },
+            {
+              "id": 26,
+              "mapper": {
+                "scope": "roundtrip",
+                "variables": [
+                  {
+                    "name": "content",
+                    "value": "{{25.candidates[].content.parts[].text}}"
+                  },
+                  {
+                    "name": "phone",
+                    "value": "{{2.contacts[].wa_id}}"
+                  },
+                  {
+                    "name": "name",
+                    "value": "{{2.contacts[].profile.name}}"
+                  },
+                  {
+                    "name": "type",
+                    "value": "{{2.messages[].type}}"
+                  }
+                ]
+              },
+              "module": "util:SetVariables",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 1573,
+                  "y": 1286,
+                  "name": "הגדרת מספר משתנים"
+                }
+              },
+              "parameters": {}
+            },
+            {
+              "id": 27,
+              "tools": [
+                {
+                  "name": "חיפוש ליד",
+                  "description": "הפעל בכל הודעה נכנסת, לפני כל פעולה אחרת. חיפוש לפי מספר הטלפון.\n\nאם חזרה רשומה — פונה מוכר. קרא את ההודעות הקודמות והשתמש בכלי העדכון ולא ביצירה. שמור את מזהה הרשומה.\n\nאם לא חזרה כלום — פונה חדש.",
+                  "flow": [
+                    {
+                      "id": 201,
+                      "module": "airtable:ActionSearchRecords",
+                      "version": 3,
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      },
+                      "mapper": {
+                        "base": "YOUR_AIRTABLE_BASE_ID",
+                        "table": "YOUR_AIRTABLE_TABLE_ID",
+                        "formula": "FIND(\"{{26.phone}}\", {נייד} & \"\")",
+                        "maxRecords": 3
+                      },
+                      "metadata": {
+                        "designer": {
+                          "x": 1500,
+                          "y": 600
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "flow": [
+                    {
+                      "id": 28,
+                      "mapper": {
+                        "from": "drive",
+                        "limit": "15",
+                        "sheetId": "YOUR_SHEET_TAB_NAME",
+                        "spreadsheetId": "YOUR_GOOGLE_SHEET_ID",
+                        "includesHeaders": "{{27.includesHeaders}}",
+                        "valueRenderOption": "FORMATTED_VALUE",
+                        "dateTimeRenderOption": "FORMATTED_STRING"
+                      },
+                      "module": "google-sheets:filterRows",
+                      "version": 2,
+                      "metadata": {
+                        "designer": {
+                          "x": 2173,
+                          "y": 1536,
+                          "name": "general- מידע על המוצרים"
+                        }
+                      },
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      }
+                    }
+                  ],
+                  "name": "Google Sheets: Search Rows",
+                  "description": "### הנחיות קריטיות לשימוש בטבלת המוצרים והשירותים (Google Sheets):\n\n1. בדיקת \"סטטוס מידע\" (חובה לפני כל מענה):\n   - בדוק תמיד את עמודת \"סטטוס מידע\" עבור המוצר/שירות המבוקש.\n   - אם מופיע \"להשלמה\", \"דורש השלמה\" או \"דורש אימות\":\n     * אסור למסור מחיר, קישור רכישה, תאריכים או להבטיח בונוסים/זמינות שלא אומתו!\n     * יש להציג רק את התוצאה/מהות המוצר (\"למי זה מתאים\" ו\"התוצאה המרכזית\").\n     * אם הלקוח מבקש מחיר או קישור שאינם מאושרים – הודע לו שהפרטים נבדקים מול הצוות ופעל לפי \"נוהל חוסר מידע\".\n\n2. אבחון והתאמה מדויקת (לא לדחוף מוצרים):\n   - שאל בקצרה מה בעל העסק רוצה לפתור או מה רמת ההטמעה שהוא מחפש.\n   - הצע תמיד הצעה אחת מרכזית שהכי מתאימה לצורך שלו, והסבר במשפט קצר למה היא מתאימה. הימנע משליחת רשימה ארוכה ומעמיסה של כל המוצרים.\n\n3. חוקי מענה לפי קטגוריית הצעה:\n   - קורס דיגיטלי:\n     * אם המחיר והקישור מאושרים (כמו בקורס \"איך לבנות צוות של 3 סוכני AI\" - 297 ₪) – הסבר בקצרה על שלושת הסוכנים ושלח את הקישור לדף המוצר.\n     * בשאר הקורסים המסומנים להשלמה – הצג את הפתרון והתוצאה בלבד, ללא מחיר/קישור.\n   - סדנה חיה (\"סדנת Claude Code\"):\n     * בדוק נכונות ללמוד ולתרגל.\n     * מסור את המחיר (1,997 ₪ כולל מע״מ, עד 3 תשלומים) ושלח את קישור הסילבוס.\n     * אין להבטיח מועד מחזור או שמירת מקום ספציפי ללא בדיקת תאריכים עדכניים.\n   - ליווי פרימיום / תהליך שנתי:\n     * אסור למסור טווח מחיר, מחירים או להבטיח פתרון ספציפי טרם שיחת אבחון.\n     * אסוף את הפרטים הבאים מהלקוח: שם, תחום העסק, צוואר הבקבוק/הבעיה המרכזית, מערכות קיימות ורמת דחיפות.\n     * לאחר איסוף הפרטים – הפנה אותו לתיאום שיחת התאמה ביומן."
+                },
+                {
+                  "flow": [
+                    {
+                      "id": 29,
+                      "mapper": {
+                        "base": "YOUR_AIRTABLE_BASE_ID",
+                        "table": "YOUR_AIRTABLE_TABLE_ID",
+                        "record": {
+                          "YOUR_FIELD_INCOMING": "{{27.record.YOUR_FIELD_INCOMING}}",
+                          "YOUR_FIELD_FULLNAME": "{{26.name}}",
+                          "YOUR_FIELD_PHONE": "{{26.phone}}",
+                          "YOUR_FIELD_EMAIL": "{{27.record.YOUR_FIELD_EMAIL}}",
+                          "YOUR_FIELD_DATE": "{{formatDate(now; \"DD/MM/YYYY\")}}"
+                        },
+                        "typecast": true,
+                        "useColumnId": false
+                      },
+                      "module": "airtable:ActionCreateRecord",
+                      "version": 3,
+                      "metadata": {
+                        "designer": {
+                          "x": 2173,
+                          "y": 1736,
+                          "name": "הכנסת ליד חדש לאירטיבל"
+                        }
+                      },
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      }
+                    }
+                  ],
+                  "name": "Airtable: Create a Record",
+                  "description": "Creates a new record in Airtable."
+                },
+                {
+                  "flow": [
+                    {
+                      "id": 30,
+                      "mapper": {
+                        "limit": "50",
+                        "query": "{{27.query}}",
+                        "fileIds": [],
+                        "filestorage": [
+                          "YOUR_KNOWLEDGE_STORE_ID"
+                        ]
+                      },
+                      "module": "knowledge:KnowledgeStandAlone",
+                      "version": 1,
+                      "metadata": {
+                        "designer": {
+                          "x": 1783,
+                          "y": 1472
+                        }
+                      },
+                      "parameters": {}
+                    }
+                  ],
+                  "name": "Agent knowledge",
+                  "description": "Search uploaded files using semantic similarity to retrieve relevant facts and context needed to answer the user’s question. Use this tool when the answer depends on information contained in the uploaded documents."
+                },
+                {
+                  "flow": [
+                    {
+                      "id": 31,
+                      "mapper": {
+                        "select": "detail",
+                        "calendar": "YOUR_CALENDAR_ID",
+                        "summary": "{{27.eventTitle}}",
+                        "description": "שם: {{26.name}}\nטלפון: {{26.phone}}\nמייל: {{27.leadEmail}}\nנושא: {{27.eventTopic}}\nמה עלה: {{27.eventNotes}}",
+                        "start": "{{27.eventStart}}",
+                        "duration": "00:20:00",
+                        "allDayEvent": false,
+                        "conferenceDate": true,
+                        "attendees": [],
+                        "transparency": "opaque",
+                        "visibility": "default"
+                      },
+                      "module": "google-calendar:createAnEvent",
+                      "version": 5,
+                      "metadata": {
+                        "designer": {
+                          "x": 2171,
+                          "y": 1946,
+                          "name": "קביעת שיחה עם ליד"
+                        }
+                      },
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      }
+                    }
+                  ],
+                  "name": "Google Calendar: Create an Event",
+                  "description": "### נוהל תיאום שיחת התאמה ביומן (Meeting Booking Flow):\n\n1. טריגרים להפניה לתיאום שיחה:\n   - מתעניין בליווי אישי 1:1 (הטמעת AI / אוטומציות).\n   - מתעניין בתהליך פרימיום שנתי (גיוס צוות, ניהול וסיסטמים).\n   - מתעניין בסדנת Claude Code שמבקש לשוחח / לבדוק התאמה.\n   - כל לקוח שמבקש במפורש לדבר עם הצוות / שיחת ייעוץ.\n\n2. חוקי בדיקת זמינות ביומן:\n   - בדוק זמינות אך ורק בבלוקים המסומנים ביומן במפורש כ: \"שיחות התאמה עם לידים\" (אין לקבוע בשום משבצת אחרת!).\n   - ודא שהזמנים המוצעים הם לעתיד בלבד (לא להציע שעות שכבר עברו באותו היום).\n   - בכל שלב, הצע תמיד 2 אופציות מדויקות לבחירה (למשל: \"טל פנויה היום בשעה 14:00 או מחר ב-11:00, מה מהם יותר נוח לך?\").\n\n3. ניהול סבבי הצעות והתנגדות זמנים:\n   - סבב 1 וסבב 2: הצע 2 חלונות זמן מתוך המשבצות הפנויות ביומן.\n   - סבב 3 (אם עדיין לא מתאים): שאל את הלקוח: \"איזה יום ושעה במהלך השבוע יכולים להתאים לך ביותר?\".\n   - בדיקת בקשת הלקוח:\n     * אם השעה שהלקוח ביקש פנויה ומאושרת ביומן תחת הבלוקים המותרים – קבע את השיחה מיד.\n     * אם השעה תפוסה או מחוץ לשעות המאושרות – אל תסרב בצורה יבשה. כתוב: \"מעולה, אני בודק מול טל/הצוות אם אפשר לפתוח חלון מיוחד בזמן הזה ונחזור אליך בהקדם לתיאום 😊\".\n     * במקרה זה: עדכן מיד את הסטטוס ברשומת ה-Airtable ל-\"לחזור לתיאום\" ושלח מייל התראה לצוות.\n\n4. איסוף פרטים לקראת הזימון:\n   - בקש מהלקוח את כתובת האימייל שלו: \"כדי שאוכל לשלוח לך את הזימון ליומן ולזום, מה המייל שלך?\".\n   - במידה והלקוח לא מוסר מייל או מתחמק – **קבע את השיחה ביומן בכל זאת** על בסיס שמו ומספר הטלפון שלו.\n\n5. יצירת האירוע ביומן (Event Creation Rules):\n   - משך הפגישה: **20 דקות בדיוק**.\n   - כותרת האירוע ביומן: \n     `שיחת התאמה - {שם הנושא שהתעניין} - {שם הלקוח}`\n     (דוגמה: \"שיחת התאמה - ליוווי הטמעת AI - יוסי כהן\" / \"שיחת התאמה - סדנת Claude Code - דנה לוי\").\n   - הגדרת וידאו: הפעל יצירת לינק אוטומטי ל-Zoom בתוך הזימון.\n   - תיאור האירוע (Description): \n     * שם הלקוח: {שם מלא}\n     * טלפון: {מספר טלפון}\n     * מייל: {כתובת מייל, אם נמסרה}\n     * תחום/נושא השיחה: {התעניינות הלקוח}\n     * הערות/צווארי בקבוק שעלו בשיחה: {סיכום קצר של מה שנאמר}\n\n6. אישור סופי מול הלקוח:\n   - לאחר יצירת האירוע בהצלחה, שלח הודעת אישור ברורה ונעימה:\n     \"מעולה {שם פרטי}! קבענו ל-{יום} בשעה {שעה}. שלחתי לך זימון עם קישור לזום (גם למייל {אם נמסר}) 🚀. מחכים לדבר איתך!\"\n\nהפגישה 20 דקות בדיוק. העבר שעת התחלה מלאה עם תאריך ושעה. אל תבטיח זום — קישור הווידאו הוא Google Meet."
+                },
+                {
+                  "name": "עדכון ליד",
+                  "description": "הפעל בכל הודעה של פונה שכבר קיים. העבר את מזהה הרשומה מהחיפוש.\n\nבשדה ההודעות הנכנסות כתוב את כל מה שהיה שם ומתחתיו בשורה חדשה את ההודעה החדשה. אל תמחק היסטוריה. אותו דבר בהודעות היוצאות.",
+                  "flow": [
+                    {
+                      "id": 202,
+                      "module": "airtable:ActionUpdateRecords",
+                      "version": 3,
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      },
+                      "mapper": {
+                        "base": "YOUR_AIRTABLE_BASE_ID",
+                        "table": "YOUR_AIRTABLE_TABLE_ID",
+                        "id": "{{27.recordId}}",
+                        "record": {
+                          "YOUR_FIELD_INCOMING": "{{27.allIncoming}}",
+                          "YOUR_FIELD_OUTGOING": "{{27.allOutgoing}}",
+                          "YOUR_FIELD_STATUS": "{{27.newStatus}}",
+                          "YOUR_FIELD_EMAIL": "{{27.emailIfGiven}}"
+                        },
+                        "typecast": true,
+                        "useColumnId": false
+                      },
+                      "metadata": {
+                        "designer": {
+                          "x": 1800,
+                          "y": 600
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "בדיקת זמינות ביומן",
+                  "description": "הפעל לפני כל הצעת מועד. אף פעם אל תציע שעה בלי להפעיל אותו.\n\nאירוע ששמו \"שיחות התאמה ללידים\" הוא חלון פנוי. כל אירוע אחר ביומן הוא זמן תפוס.\n\nמותר להציע שעה רק אם היא בתוך חלון פנוי, אין בה פגישה קיימת כולל 20 הדקות שאחריה, והיא בעתיד. הצע בדיוק שני מועדים.\n\nאם אין אף חלון פנוי — אל תמציא שעה, והפעל את כלי ההתראה.",
+                  "flow": [
+                    {
+                      "id": 203,
+                      "module": "google-calendar:searchEvents",
+                      "version": 5,
+                      "parameters": {
+                        "__IMTCONN__": 0
+                      },
+                      "mapper": {
+                        "calendar": "YOUR_CALENDAR_ID",
+                        "timeMin": "{{now}}",
+                        "timeMax": "{{addDays(now; 14)}}",
+                        "singleEvents": true,
+                        "orderBy": "startTime",
+                        "limit": 40
+                      },
+                      "metadata": {
+                        "designer": {
+                          "x": 2100,
+                          "y": 600
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "התראה לבעל העסק",
+                  "description": "הפעל בשלושה מצבים בלבד:\n1. אין לך תשובה. נושא: צריך תשובה\n2. הפונה ביקש בן אדם או מתוסכל. נושא: ביקש בן אדם\n3. מתעניין בליווי פרימיום או בתהליך שנתי. נושא: ליד חם\n\nבגוף: שם, טלפון, מה כתב, מה ענית, מה חסר. רק אחרי שהכלי רץ — אמור לפונה שהעברת.",
+                  "flow": [
+                    {
+                      "id": 204,
+                      "module": "google-email:ActionSendEmail",
+                      "version": 2,
+                      "parameters": {
+                        "account": 0
+                      },
+                      "mapper": {
+                        "to": [
+                          "your@email.com"
+                        ],
+                        "subject": "סוכן לידים — {{27.alertSubject}}",
+                        "html": "{{27.alertBody}}"
+                      },
+                      "metadata": {
+                        "designer": {
+                          "x": 2400,
+                          "y": 600
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "mapper": {
+                "files": [],
+                "message": "שם משתמש: {{26.name}}\nתוכן ההודעה: \n{{26.content}}",
+                "threadId": "{{26.phone}}",
+                "outputType": "text",
+                "tokenLimit": "50",
+                "modelConfig": {
+                  "timeout": "",
+                  "recursionLimit": "15",
+                  "iterationsFromHistoryCount": "5"
+                },
+                "defaultModel": "gemini-3.5-flash-lite",
+                "systemPrompt": "אתה \"אדיר\", עוזר אישי דיגיטלי חם, שירותי ומקצועי.\n\n### ⛔ חוקי ברזל נוקשים (Zero Tolerance):\n1. איסור מוחלט על \"מגילות\": אורך הודעה מקסימלי הוא 2–3 משפטים קצרים בלבד!\n2. איסור מסירת מחיר: אל תנקוב במחיר בשום אופן אלא אם הלקוח שאל במפורש \"כמה זה עולה?\" / \"מה המחיר?\".\n3. שפה ניטרלית וטבעית: אסור להשתמש בלוכסנים (בלי: \"תלמד/י\", \"תרצה/י\"). השתמש רק בניסוח טבעי (למשל: \"איזה כיף שפנית\", \"הסדנה כוללת...\", \"רוצה שנבדוק התאמה?\").\n4. מילים באנגלית: שמות כמו \"Claude Code\" או קישורים יש לכתוב בשורה נפרדת לחלוטין כדי למנוע היפוך אותיות בוואטסאפ.\n5. אמינות: ענה אך ורק על פי המידע המאושר. אל תמציא נתונים.\n\n---\n\n### 🛑 פרוטוקול תיאום פגישה ביומן (חובה לעבוד שלב-אחר-שלב בלבד!):\nחל איסור מוחלט להפעיל את כלי יצירת הפגישה (Create Event) מבלי שהתקיימו כל השלבים הבאים לפי הסדר:\n\n* שלב 1 (הצעה): הלקוח הביע רצון לתאם שיחה.\n  👈 הפעולה שלך: בדוק ביומן משבצות פנויות של \"שיחות התאמה עם לידים\", והצע ללקוח בדיוק 2 מועדים לבחירה (לדוגמה: \"טל פנויה היום ב-14:00 או מחר ב-11:00, מה יותר נוח?\"). אל תיצור אירוע ביומן בשלב זה!\n* שלב 2 (אישור מועד ואיסוף מייל): הלקוח בחר שעה ספציפית.\n  👈 הפעולה שלך: בקש ממנו כתובת מייל לטובת שליחת הזימון והקישור ל-Zoom.\n* שלב 3 (יצירת הפגישה בלבד): רק אחרי שהשעה והיום נבחרו בבירור.\n  👈 הפעולה שלך: הפעל את כלי היומן ליצירת אירוע של 20 דקות עם Zoom, ושלח הודעת אישור קצרה.\n\n---\n\n### ניתוב שיחה ותגובות:\n\n● פנייה על סדנת Claude Code / קורסים:\n- אל תשפוך את כל הסילבוס והעלויות בבת אחת.\n- תן הסבר קצר וממצה במשפט אחד:\n  \"בסדנה לומדים לבנות מערכות וסוכני AI שמבצעים משימות אמיתיות וחוסכים עבודה שוטפת בעסק 😊.\n  רוצה שנבדוק יחד אם זה מתאים לאופי הפעילות שלך כרגע?\"\n\n● שירות לקוחות / תמיכה:\n- ענה מתוך מאגר \"general\". אם חסר מידע – מסור שהנושא נבדק מול הצוות ושלח מייל פנימי.\n\n● מתעניין כללי / ליווי אישי:\n- צור ליד ב-Airtable.\n- שאל שאלה קצרה לאבחון האתגר בעסק לפני שמציעים פתרון או שיחה.",
+                "fallbackEnabled": false,
+                "reasoningEffort": "low"
+              },
+              "module": "ai-local-agent:RunLocalAIAgent",
+              "version": 0,
+              "metadata": {
+                "designer": {
+                  "x": 1873,
+                  "y": 1286
+                }
+              },
+              "parameters": {
+                "makeConnectionId": 0
+              }
+            },
+            {
+              "id": 33,
+              "mapper": {
+                "to": "{{26.phone}}",
+                "text": {
+                  "body": "{{27.response}}",
+                  "preview_url": false
+                },
+                "type": "text",
+                "fromId": "YOUR_WHATSAPP_PHONE_NUMBER_ID"
+              },
+              "module": "whatsapp-business-cloud:sendMessage",
+              "version": 1,
+              "metadata": {
+                "designer": {
+                  "x": 2173,
+                  "y": 1286
+                }
+              },
+              "parameters": {
+                "__IMTCONN__": 0
+              }
+            }
+          ]
+        }
+      ],
+      "version": 1,
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 650
+        }
+      }
+    }
+  ],
+  "name": "סוכן AI לניהול לידים בוואטסאפ — תבנית",
+  "metadata": {
+    "version": 1,
+    "instant": true
+  },
+  "scheduling": {
+    "type": "immediately",
+    "maximum_runs_per_minute": 100
+  },
+  "interface": {
+    "input": [],
+    "output": []
+  }
+}
